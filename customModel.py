@@ -69,7 +69,7 @@ def save_model(model):
     from torch import save
     from os import path
     #if isinstance(model, CNNClassifier):
-    return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), 'reshapedcnn.th'))
+    return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__), "weights"), 'reshapedcnn.th'))
     #raise ValueError("model type '%s' not supported!"%str(type(model)))
 
 
