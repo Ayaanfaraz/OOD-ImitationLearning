@@ -3,16 +3,16 @@ from utils import accuracy, load_data
 import torch
 from torchvision import models
 from torch.utils.tensorboard import SummaryWriter
+import os
 
 
 def train(args):
-    from os import path
     model = CNNClassifier()
     dirname = os.path.join("runs", args.tbdir)
     tb = SummaryWriter(log_dir=dirname)
 
     # --- Initializations ---
-    model = CNNClassifier() #models.resnet18(pretrained=True) #CNNClassifier()
+    model = CNNClassifier() #models.resnet18(pretrained=True)
 
     # # --- Freeze layers and replace FC layer ---
     # for name, param in model.named_parameters():
@@ -57,9 +57,6 @@ def train(args):
             tb.add_scalar("Steer Accuracy", steer, epoch)
             tb.add_scalar("Throttle Accuracy", throttle, epoch)
             tb.add_scalar("Brake Accuracy", brake, epoch)
-            # tb.add_scalar("Steer RMSE", accuracy(ypred, yhat), epoch)
-            # tb.add_scalar("Throttle RMSE", accuracy(ypred, yhat), epoch)
-            # tb.add_scalar("Brake RMSE", accuracy(ypred, yhat), epoch)
 
         # After each train epoch, do validation before starting next train epoch.
         model.eval()
@@ -78,9 +75,6 @@ def train(args):
             tb.add_scalar("Steer Accuracy", steer, epoch)
             tb.add_scalar("Throttle Accuracy", throttle, epoch)
             tb.add_scalar("Brake Accuracy", brake, epoch)
-            # tb.add_scalar("Steer RMSE", accuracy(ypred, yhat), epoch)
-            # tb.add_scalar("Throttle RMSE", accuracy(ypred, yhat), epoch)
-            # tb.add_scalar("Brake RMSE", accuracy(ypred, yhat), epoch)
 
     save_model(model)
 
