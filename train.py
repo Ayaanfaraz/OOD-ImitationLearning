@@ -8,7 +8,8 @@ from torch.utils.tensorboard import SummaryWriter
 def train(args):
     from os import path
     model = CNNClassifier()
-    tb = SummaryWriter()
+    dirname = os.path.join("runs", args.tbdir)
+    tb = SummaryWriter(log_dir=dirname)
 
     # --- Initializations ---
     model = CNNClassifier() #models.resnet18(pretrained=True) #CNNClassifier()
@@ -90,6 +91,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--lrate', type=float, default=0.001)
     parser.add_argument('-e', '--epochs', type=int, default=450)
+    parser.add_argument('-t', '--tbdir', type=str, default="")
 
     args = parser.parse_args()
     train(args)
