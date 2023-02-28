@@ -69,7 +69,7 @@ def save_model(model):
     from torch import save
     from os import path
     #if isinstance(model, CNNClassifier):
-    return save(model.state_dict(), path.join("runs/weights", 'reshapedcnn.th'))
+    return save(model.state_dict(), path.join("weights", 'reshapedcnn.th'))
     #raise ValueError("model type '%s' not supported!"%str(type(model)))
 
 
@@ -77,5 +77,5 @@ def load_model():
     from torch import load
     from os import path
     r = CNNClassifier()
-    r.load_state_dict(load(path.join("runs/weights", 'cnn.th'), map_location='cuda:1'))
+    r.load_state_dict(load(path.join("weights", 'cnn.th'), map_location='cuda:1'))
     return r
