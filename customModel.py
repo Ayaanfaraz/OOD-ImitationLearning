@@ -77,5 +77,5 @@ def load_model():
     from torch import load
     from os import path
     r = CNNClassifier()
-    r.load_state_dict(load(path.join("weights", 'cnn.th'), map_location='cuda:1'))
+    r.load_state_dict(load(path.join("weights", 'reshapedcnn.th'), map_location='cuda:1'))
     return r

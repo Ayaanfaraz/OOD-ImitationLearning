@@ -1,4 +1,4 @@
-from customModel import CNNClassifier, save_model
+from customModel import CNNClassifier, save_model, load_model
 from utils import accuracy, load_data
 import torch
 from torchvision import models
@@ -13,6 +13,7 @@ def train(args):
 
     # --- Initializations ---
     model = CNNClassifier() #models.resnet18(pretrained=True)
+    model = load_model()
 
     # # --- Freeze layers and replace FC layer ---
     # for name, param in model.named_parameters():
