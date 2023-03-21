@@ -1,5 +1,5 @@
 from customModel import CNNClassifier, save_model, load_model
-from utils import accuracy, load_data
+from utils import accuracy, load_custom_data
 import torch
 from torchvision import models
 from torch.utils.tensorboard import SummaryWriter
@@ -28,8 +28,8 @@ def train(args):
 
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lrate)
     criterion = torch.nn.MSELoss()
-    train_loader = load_data("/home/asf170004/data/customData/train")
-    validation_loader = load_data("/home/asf170004/data/customData/valid")
+    train_loader = load_custom_data("/home/asf170004/data/customData/train")
+    validation_loader = load_custom_data("/home/asf170004/data/customData/valid")
 
     # --- SGD Iterations ---
     for epoch in range(args.epochs):
@@ -40,7 +40,7 @@ def train(args):
 
         # Per epoch train loop.
         model.train()
-        for _, (rgb_input, sem_input, yhat) in enumerate(train_loader):
+        for _, (rgb_input, sem_input, uncertainty_input, yhat) in enumerate(train_loader):
             yhat = yhat.view(-1, 3, 1)
             yhat = yhat.cuda()
             optimizer.zero_grad()
@@ -61,7 +61,7 @@ def train(args):
 
         # After each train epoch, do validation before starting next train epoch.
         model.eval()
-        for _, (rgb_input, sem_input, yhat) in enumerate(validation_loader):
+        for _, (rgb_input, sem_input, uncertainty_input, yhat) in enumerate(validation_loader):
             yhat = yhat.view(-1, 3, 1)
             yhat = yhat.cuda()
             with torch.no_grad():
