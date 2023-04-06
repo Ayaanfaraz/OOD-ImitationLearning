@@ -12,9 +12,9 @@ from PIL import Image, ImageOps
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
-class CarlaAliDataset(Dataset):
+class CarlaDataset(Dataset):
     """
-    Classification data from CarlaAliDataset.
+    Classification data from CarlaDataset.
     Represented as tuples of 3 x 150 x 200 images and their vectors of data/labels
     """
     def __init__(self, dataset_path):
@@ -75,7 +75,7 @@ def load_data(dataset_path, num_workers=0, batch_size=128):
     """
     Driver function to create dataset and return constructed dataloader.
     """
-    dataset = CarlaAliDataset(dataset_path)
+    dataset = CarlaDataset(dataset_path)
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=False)
 
 

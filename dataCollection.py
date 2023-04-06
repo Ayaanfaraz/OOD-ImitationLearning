@@ -11,6 +11,8 @@ import queue
 import random
 import sys
 import time
+import cv2
+import csv
 
 from carla import ColorConverter as cc
 from matplotlib import image
@@ -27,8 +29,8 @@ except IndexError:
 IMAGE_HEIGHT = 300
 IMAGE_WIDTH = 300
 
-TIMESTEPS_PER_EPISODE = 400
-NUM_EPISODES = 25
+TIMESTEPS_PER_EPISODE = 5 #400
+NUM_EPISODES = 3#25
 
 measurements_list = []
 images_list = []
@@ -141,9 +143,9 @@ class CarEnv:
         self.waypoints = self.client.get_world().get_map().generate_waypoints(distance=3.0)
 
         # Spawn the vehicle at the specific locations, on the curve 
-        self.spawn_point = carla.Transform(carla.Location(x=x_list[self.i], y=y_list[self.i], z=0.598),carla.Rotation(pitch=0.0, yaw=0.0, roll=0.000000))
+        #self.spawn_point = carla.Transform(carla.Location(x=x_list[self.i], y=y_list[self.i], z=0.598),carla.Rotation(pitch=0.0, yaw=0.0, roll=0.000000))
 
-        # self.spawn_point = random.choice(self.waypoints).transform #Used to be waypoint[0]
+        self.spawn_point = random.choice(self.waypoints).transform #Used to be waypoint[0]
         self.spawn_point.location.z += 2
         self.vehicle = self.world.spawn_actor(self.model_3, self.spawn_point)  ## changed for adding waypoints
 
@@ -154,14 +156,14 @@ class CarEnv:
 
         self.rgb_cam = self.blueprint_library.find('sensor.camera.rgb')
         # self.rgb_cam.set_attribute('sensor_tick', str(tick_sensor))
-        self.rgb_cam.set_attribute("image_size_x", f"{self.im_width}")
-        self.rgb_cam.set_attribute("image_size_y", f"{self.im_height}")
+        self.rgb_cam.set_attribute("image_size_x", f"{IMAGE_WIDTH}")
+        self.rgb_cam.set_attribute("image_size_y", f"{IMAGE_HEIGHT}")
         self.rgb_cam.set_attribute("fov", f"110")  ## fov, field of view
 
         self.ss_cam = self.blueprint_library.find('sensor.camera.semantic_segmentation')
         # self.ss_cam.set_attribute('sensor_tick', str(tick_sensor))
-        self.ss_cam.set_attribute("image_size_x", f"{self.im_width}")
-        self.ss_cam.set_attribute("image_size_y", f"{self.im_height}")
+        self.ss_cam.set_attribute("image_size_x", f"{IMAGE_WIDTH}")
+        self.ss_cam.set_attribute("image_size_y", f"{IMAGE_HEIGHT}")
         self.ss_cam.set_attribute("fov", f"110")
 
         transform = carla.Transform(carla.Location(x=2.5, z=0.7))
@@ -291,11 +293,11 @@ class CarEnv:
         measurements_list.append(data)
         images_list.append((image_rgbs, semantic_segmentation))
         
-        cv2.imshow("Ground Truth RGB",image_rgbs)
-        cv2.waitKey(1)
+        cv2.imwrite("rgb.jpg",image_rgbs)
+        # cv2.waitKey(1)
         
-        cv2.imshow("Semantic Segmentation", semantic_segmentation)
-        cv2.waitKey(1)
+        # cv2.imshow("Semantic Segmentation", semantic_segmentation)
+        # cv2.waitKey(1)
         return done, None
 
 #=====================================
@@ -304,13 +306,14 @@ class CarEnv:
 if __name__ == '__main__':
     
     collectionTowns = ['Town01','Town02','Town03','Town04']
-    collectionWeather = [carla.WeatherParameters.ClearNoon, 
+    collectionWeather = [carla.WeatherParameters.ClearNoon,
                         carla.WeatherParameters.HardRainSunset,
                         carla.WeatherParameters.CloudyNoon,
                         carla.WeatherParameters.ClearSunset]
+    weatherNames = ["ClearNoon", "HardRainSunset", "CloudyNoon", "ClearSunset"]
 
     for town in collectionTowns:
-        for weather in collectionWeather:
+        for weather, weatherName in zip(collectionWeather,weatherNames):
             env = CarEnv(town)
 
             for episode in tqdm(range(0, NUM_EPISODES), unit='episodes'):
@@ -326,7 +329,7 @@ if __name__ == '__main__':
                 env.reset()
                 done = False
 
-                print("Data Collection Episode: %d", episode)
+                print("Data Collection Episode: ", episode)
 
                 # Synchronously iterate through sensors. (Collect data)
                 with CarlaSyncMode(env.world, weather, env.rgb_sensor, env.sem_sensor, fps=10) as sync_mode:
@@ -357,17 +360,56 @@ if __name__ == '__main__':
             # Images has a tuple of RGB, Sem ground truth on each line.
             # Loop through the pkl files to get each record.
 
-            file_name = str(town) + "_" + (str(weather).split('.'))[-1]
+            # --- Make a train test split of the collected data/images ---
 
-            with open('_out/' + file_name + '_data.pkl','wb') as of1:
-                for measurement_tuple in measurements_list:
-                    pickle.dump(measurement_tuple,of1)
+            valid_images = list(range(int(len(images_list)*0.3))) #30 percent split
+            train_images = list(range(int(len(images_list)*0.3), len(images_list))) #70 percent split
 
-            with open('_out/' + str(town) + '_images.pkl','wb') as of2:
-                for image_tuple in images_list:
-                    pickle.dump(image_tuple,of2)
+            valid_data = list(range(int(len(measurements_list)*0.3))) #30 percent split
+            train_data = list(range(int(len(measurements_list)*0.3), len(measurements_list))) #70 percent split
+
+            # Make sure length of measurement and images is the same
+            assert(len(valid_data) == len(valid_images) and len(train_data) == len(train_images))
+
+            # ---- Save images as raw jpg in valid folder -----
+            train_dir = "_out/train/"
+            with open(train_dir + 'labels.csv', 'a+', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                for index in train_images:
+                    filename = str(town) + "_" + (str(weatherName)) + "_"
+                    image_rgbs, image_sem = images_list[index]
+
+                    rgb_path = train_dir + filename + "rgb_" + str(index) + ".jpg"
+                    sem_path = train_dir + filename + "sem_" + str(index) + ".jpg"
+
+                    cv2.imwrite(rgb_path, image_rgbs)
+                    cv2.imwrite(sem_path, image_sem)
+
+                    measurements = measurements_list[index]
+                    row = [rgb_path, sem_path]
+                    row.extend(measurements)
+                    writer.writerow(row)
+
+            # ---- Save images as raw jpg in valid folder -----
+            valid_dir = "_out/valid/"
+            with open(valid_dir+'labels.csv', 'a+', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                for index in valid_images:
+                    filename = str(town) + "_" + (str(weatherName)) + "_"
+                    image_rgbs, image_sem = images_list[index]
+
+                    rgb_path = valid_dir + filename + "rgb_" + str(index) + ".jpg"
+                    sem_path = valid_dir + filename + "sem_" + str(index) + ".jpg"
+
+                    cv2.imwrite(rgb_path, image_rgbs)
+                    cv2.imwrite(sem_path, image_sem)
+
+                    measurements = measurements_list[index]
+                    row = [rgb_path, sem_path]
+                    row.extend(measurements)
+                    writer.writerow(row)
 
             # Clear global buffers. 
-            del measurements_list
-            del images_list
+            measurements_list = []
+            images_list = []
             
