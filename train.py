@@ -1,4 +1,4 @@
-from customModel import CNNClassifier, save_model, load_model
+from customModel import FusionModel, save_model, load_model
 from utils import accuracy, load_data
 import torch
 from torchvision import models
@@ -7,13 +7,12 @@ import os
 
 
 def train(args):
-    model = CNNClassifier()
     dirname = os.path.join("runs", args.tbdir)
     tb = SummaryWriter(log_dir=dirname)
 
     # --- Initializations ---
-    model = CNNClassifier() #models.resnet18(pretrained=True)
-    model = load_model()
+    model = FusionModel() #models.resnet18(pretrained=True)
+    #model = load_model()
 
     # # --- Freeze layers and replace FC layer ---
     # for name, param in model.named_parameters():
@@ -28,8 +27,8 @@ def train(args):
 
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lrate)
     criterion = torch.nn.MSELoss()
-    train_loader = load_data("/home/asf170004/data/customData/train")
-    validation_loader = load_data("/home/asf170004/data/customData/valid")
+    train_loader = load_data("/home/asf170004/data/customData/train", num_workers=4)
+    validation_loader = load_data("/home/asf170004/data/customData/valid", num_workers=4)
 
     # --- SGD Iterations ---
     for epoch in range(args.epochs):
@@ -45,7 +44,7 @@ def train(args):
             yhat = yhat.cuda()
             optimizer.zero_grad()
             sem_input.to(device)
-            ypred = model(sem_input.cuda())
+            ypred = model(sem_input.cuda(), rgb_input.cuda())
             loss = criterion(ypred, yhat)
             loss.backward()
             optimizer.step()
@@ -66,7 +65,7 @@ def train(args):
             yhat = yhat.cuda()
             with torch.no_grad():
                 sem_input.to(device)
-                ypred = model(sem_input.cuda())
+                ypred = model(sem_input.cuda(), rgb_input.cuda())
                 loss = criterion(ypred, yhat)
 
             # Record validation loss and accuracy

@@ -57,9 +57,8 @@ class CNNClassifier(torch.nn.Module):
 
         x = x.reshape(x.size(0), -1)
 
-        x = self.linear(F.relu(x))
-        x = self.fc(x)
-        return x.view(-1, 3, 1)
+        x = self.linear(F.relu(x)) # 64 output of features
+        return x
 
         # Inspiration taken from following URLs:
         # https://blog.paperspace.com/writing-cnns-from-scratch-in-pytorch/
@@ -69,13 +68,37 @@ def save_model(model):
     from torch import save
     from os import path
     #if isinstance(model, CNNClassifier):
-    return save(model.state_dict(), path.join("weights", 'reshapedcnn.th'))
-    #raise ValueError("model type '%s' not supported!"%str(type(model)))
+    return save(model.state_dict(), path.join("weights", 'fusionModel.th'))
 
 
 def load_model():
     from torch import load
     from os import path
     r = CNNClassifier()
-    r.load_state_dict(load(path.join("weights", 'reshapedcnn.th'), map_location='cuda:1'))
+    r.load_state_dict(load(path.join("weights", 'fusionModel.th'), map_location='cuda:1'))
     return r
+
+class FusionModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.cnn1 = CNNClassifier()
+        self.cnn2 = CNNClassifier()
+        self.fc = torch.nn.Linear(128, 3)
+
+    def forward(self, rgb, semantic):
+        """
+        @rgb: torch.Tensor((B,64))
+        @semantic: torch.Tensor((B,64))
+        @return: torch.Tensor((B,3))
+        """
+
+        rgb_features = self.cnn1(rgb)
+        sem_features = self.cnn2(semantic)
+
+        # Cat 64 and 64 features and otput steer, throttle, brake.
+        x = torch.cat((rgb_features, sem_features), dim=1)
+        x = self.fc(x)
+
+        return x.view(-1, 3, 1)
+
