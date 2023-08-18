@@ -68,7 +68,7 @@ def save_model(model):
     from torch import save
     from os import path
     #if isinstance(model, CNNClassifier):
-    return save(model.state_dict(), path.join("weights", 'fusionModel.th'))
+    return save(model.state_dict(), path.join("weights", 'fusionModelNewData.th'))
 
 
 def load_model():

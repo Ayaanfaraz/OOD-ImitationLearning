@@ -27,8 +27,8 @@ def train(args):
 
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lrate)
     criterion = torch.nn.MSELoss()
-    train_loader = load_data("/home/asf170004/data/customData/train", num_workers=4)
-    validation_loader = load_data("/home/asf170004/data/customData/valid", num_workers=4)
+    train_loader = load_data("/home/asf170004/data/customFusionData/_out/train", num_workers=4)
+    validation_loader = load_data("/home/asf170004/data/customFusionData/_out/valid", num_workers=4)
 
     # --- SGD Iterations ---
     for epoch in range(args.epochs):
